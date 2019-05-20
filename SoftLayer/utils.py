@@ -7,8 +7,8 @@
 """
 import datetime
 import re
-
 import six
+import time
 
 # pylint: disable=no-member, invalid-name
 
@@ -224,3 +224,29 @@ def clean_string(string):
         return ''
     else:
         return " ".join(string.split())
+
+
+def timestamp(date):
+    """Converts a datetime to timestamp
+
+    :param datetime date:
+    :returns int: The timestamp of date.
+    """
+
+    _timestamp = time.mktime(date.timetuple())
+
+    return int(_timestamp)
+
+
+def days_to_datetime(days):
+    """ Returns the datetime value of last N days.
+
+    :param int days: From 0 to N days
+    :returns int: The datetime of last N days or datetime.now() if days <= 0.
+    """
+    date = datetime.datetime.now()
+
+    if days > 0:
+        date -= datetime.timedelta(days=days)
+
+    return date
