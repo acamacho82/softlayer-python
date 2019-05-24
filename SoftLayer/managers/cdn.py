@@ -39,7 +39,7 @@ class CDNManager(utils.IdentifierMixin, object):
     def get_cdn(self, unique_id, **kwargs):
         """Retrieves the information about the CDN account object.
 
-        :param int unique_id: The unique ID associated with the CDN.
+        :param str unique_id: The unique ID associated with the CDN.
         :param dict \\*\\*kwargs: header-level option (mask)
         :returns: The CDN object
         """
@@ -52,47 +52,61 @@ class CDNManager(utils.IdentifierMixin, object):
     def get_origins(self, unique_id, **kwargs):
         """Retrieves list of origin pull mappings for a specified CDN account.
 
-        :param int unique_id: The unique ID associated with the CDN.
+        :param str unique_id: The unique ID associated with the CDN.
         :param dict \\*\\*kwargs: header-level options (mask, limit, etc.)
         :returns: The list of origin paths in the CDN object.
         """
 
         return self.cdn_path.listOriginPath(unique_id, **kwargs)
 
-    def add_origin(self, unique_id, path, origin_address, origin_type="HOST_SERVER", header=None,
-                   port=80, protocol='HTTP', bucket_name=None, file_extensions=None,
-                   optimize_for="General web delivery", cache_query="include all"):
-        """
+    def add_origin(self, unique_id, origin, path, origin_type="server", header=None,
+                   port=80, protocol='http', bucket_name=None, file_extensions=None,
+                   optimize_for="web", cache_query="include all"):
+        """Creates an origin path for an existing CDN.
 
-        :param unique_id:
-        :param path:
-        :param origin_address:
-        :param origin_type:
-        :param header:
-        :param port:
-        :param protocol:
-        :param bucket_name:
-        :param file_extensions:
-        :param optimize_for:
-        :param cache_query:
-        :return:
+        :param str unique_id: The unique ID associated with the CDN.
+        :param str path: relative path to the domain provided, e.g. "/articles/video"
+        :param str origin: ip address or hostname if origin_type=server, API endpoint for
+                           your S3 object storage if origin_type=storage
+        :param str origin_type: it can be 'server' or 'storage' types.
+        :param str header: the edge server uses the host header to communicate with the origin.
+                           It defaults to hostname. (optional)
+        :param int port: the http port number (default: 80)
+        :param str protocol: the protocol of the origin (default: HTTP)
+        :param str bucket_name: name of the available resource
+        :param str file_extensions: file extensions that can be stored in the CDN, e.g. "jpg,png"
+        :param str optimize_for: performance configuration, available options: web, video, and file
+                                 where:
+                                    'web'   --> 'General web delivery'
+                                    'video' --> 'Video on demand optimization'
+                                    'file'  --> 'Large file optimization'
+        :param str cache_query: rules with the following formats: 'include-all', 'ignore-all',
+                               'include: space separated query-names',
+                               'ignore: space separated query-names'.'
+        :return: a CDN origin path object
         """
+        types = {'server': 'HOST_SERVER', 'storage': 'OBJECT_STORAGE'}
+        performance_config = {
+            'web': 'General web delivery',
+            'video': 'Video on demand optimization',
+            'file': 'Large file optimization'
+        }
 
         new_origin = {
             'uniqueId': unique_id,
             'path': path,
-            'origin': origin_address,
-            'originType': origin_type,
+            'origin': origin,
+            'originType': types.get(origin_type, 'HOST_SERVER'),
             'httpPort': port,
-            'protocol': protocol,
-            'performanceConfiguration': optimize_for,
+            'protocol': protocol.upper(),
+            'performanceConfiguration': performance_config.get(optimize_for, 'General web delivery'),
             'cacheKeyQueryRule': cache_query
         }
 
         if header:
             new_origin['header'] = header
 
-        if origin_type == 'OBJECT_STORAGE':
+        if types.get(origin_type) == 'OBJECT_STORAGE':
             if bucket_name:
                 new_origin['bucketName'] = bucket_name
             else:
@@ -109,7 +123,7 @@ class CDNManager(utils.IdentifierMixin, object):
     def remove_origin(self, unique_id, path):
         """Removes an origin pull mapping with the given origin pull ID.
 
-        :param int unique_id: The unique ID associated with the CDN.
+        :param str unique_id: The unique ID associated with the CDN.
         :param str path: The origin path to delete.
         :returns: A string value
         """
@@ -119,7 +133,7 @@ class CDNManager(utils.IdentifierMixin, object):
     def purge_content(self, unique_id, path):
         """Purges a URL or path from the CDN.
 
-        :param int unique_id: The unique ID associated with the CDN.
+        :param str unique_id: The unique ID associated with the CDN.
         :param str path: A string of url or path that should be purged.
         :returns: A Container_Network_CdnMarketplace_Configuration_Cache_Purge array object
         """
